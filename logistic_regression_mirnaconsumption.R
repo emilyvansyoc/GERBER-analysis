@@ -163,8 +163,8 @@ pred.df <- full %>% rownames_to_column(var = "ID") %>% dplyr::select(ID, is.95) 
   ))
 
 ## summarize
-length(which(pred.df$is.95 == 1 &  pred.df$preds == 1)) # 1
-length(which(pred.df$is.95 == 1 &  pred.df$preds == 0)) # 14
+length(which(pred.df$is.95 == 1 &  pred.df$preds == 1)) # 0
+length(which(pred.df$is.95 == 1 &  pred.df$preds == 0)) # 15
 length(which(pred.df$is.95 == 0 &  pred.df$preds == 1)) # 0
 
 ### ---- plot; miR-224-5p ----
