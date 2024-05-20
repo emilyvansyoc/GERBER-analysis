@@ -5,6 +5,7 @@ library(tidyverse)
 library(rstatix)
 library(ggpubr)
 library(MASS)
+library(pROC)
 
 
 ## get WFL-Z quantiles at or above 95th percentile
@@ -47,6 +48,9 @@ formod <- weights %>%
 ## make full model
 mod <- glm(is.95 ~ ., data = formod, family = "binomial")
 summary(mod) 
+
+# get ROC curve and AUC
+myroc1 <- roc(is.95 ~ probs, data = formod) # AUC is 0.6242
 
 ## predict probability of 95% percentile
 probs <- predict(mod, type = "response")
@@ -111,6 +115,8 @@ length(which(pred.df$is.95 == 1 &  pred.df$preds == 1)) # 0
 length(which(pred.df$is.95 == 1 &  pred.df$preds == 0)) # 15
 length(which(pred.df$is.95 == 0 &  pred.df$preds == 1)) # 0
 
+## get ROC curve
+myroc1.5 <- roc(is.95 ~ probs, data = full %>% dplyr::select(starts_with("hsa"), is.95)) # AUC is 0.7577
 
 ## test colinearity
 car::vif(mod1.5) # a lot of the miRNAs are colinear
@@ -145,6 +151,12 @@ car::vif(mod2) # four of the miRNAs are colinear (>4)
 ##check influential values
 plot(mod2, which = 4, id.n = 3) # none with high Cook sd
 
+# add probs to df
+full$probs <- probs
+
+## get ROC curve
+myroc2 <- roc(is.95 ~ probs, data = full) # AUC 0.7977
+
 #### ---- use just miR-224-5p ----
 
 mod3 <- glm(is.95 ~ hsa.miR.224.5p, data = full, family = "binomial")
@@ -166,6 +178,35 @@ pred.df <- full %>% rownames_to_column(var = "ID") %>% dplyr::select(ID, is.95) 
 length(which(pred.df$is.95 == 1 &  pred.df$preds == 1)) # 0
 length(which(pred.df$is.95 == 1 &  pred.df$preds == 0)) # 15
 length(which(pred.df$is.95 == 0 &  pred.df$preds == 1)) # 0
+
+# add probs to dataset
+mir224$probs <- probs
+
+## get ROC
+myroc3 <- roc(is.95 ~ probs, data = mir224)
+
+## ----- plot ROCs ----
+
+ro1 <- plot.roc(myroc1, add = FALSE,
+                percent = TRUE, col = "blue")
+
+ro2 <- lines.roc(myroc1.5, percent = TRUE, col = "red",
+                 xlim = c(100, 0), ylim = c(0, 100))
+ro3 <- lines.roc(myroc3, percent = TRUE, col = "green")
+
+legend("bottomright", legend = c("Demographics", "Demog. + miRNA", "Demog. + mir-224-5p"), col = c("blue", "red", "green"), lwd = 2)
+
+## save the plot
+png(filename = "2023-Analyses/prelim-figures/roccurves.png", res = 300, height = 6, width = 7, units = "in")
+ro1 <- plot.roc(myroc1, add = FALSE,
+                percent = TRUE, col = "blue")
+
+ro2 <- lines.roc(myroc1.5, percent = TRUE, col = "red",
+                 xlim = c(100, 0), ylim = c(0, 100))
+ro3 <- lines.roc(myroc3, percent = TRUE, col = "green")
+
+legend("bottomright", legend = c("Demographics", "miRNA", "Demog. + mir-224-5p"), col = c("blue", "red", "green"), lwd = 2)
+dev.off()
 
 ### ---- plot; miR-224-5p ----
 
